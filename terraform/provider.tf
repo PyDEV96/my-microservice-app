@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.4"
+  required_version = ">= 1.10.0"
   # 1. THE BACKEND (Where the state lives)
   backend "s3" {
     bucket         = "my-microservice-tfstate-unique-name"
