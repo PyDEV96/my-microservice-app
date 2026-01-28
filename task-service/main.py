@@ -12,4 +12,4 @@ app.add_middleware(
 
 @app.get("/api/tasks")
 def get_tasks():
-    return [{"id": 1, "title": "Setup Microservices", "status": "Active"}]
+    return [{"id": 1, "title": "Setup Microservices", "status": "Active-1"}]
