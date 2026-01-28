@@ -1,0 +1,69 @@
+name: Build & Deploy to EKS
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "frontend/**"
+      - "task-service/**"
+      - "k8s/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # ---------------- AWS AUTH (OIDC) ----------------
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Fetch AWS Account ID
+        run: |
+          echo "ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ---------------- BACKEND ----------------
+      - name: Build & Push Backend
+        run: |
+          docker build -t task-service ./task-service
+          docker tag task-service:latest \
+            $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/task-service:latest
+          docker push \
+            $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/task-service:latest
+
+      # ---------------- FRONTEND ----------------
+      - name: Build & Push Frontend
+        run: |
+          docker build -t frontend ./frontend
+          docker tag frontend:latest \
+            $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:latest
+          docker push \
+            $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:latest
+
+      # ---------------- EKS DEPLOY ----------------
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name tier-app-eks \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to EKS
+        run: |
+          kubectl apply -f k8s/
+
+      - name: Verify rollout
+        run: |
+          kubectl rollout status deployment/frontend
+          kubectl rollout status deployment/task-service
