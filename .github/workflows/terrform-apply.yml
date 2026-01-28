@@ -1,0 +1,44 @@
+name: Terraform Apply -1
+
+on:
+  workflow_run:
+    workflows: ["Terraform Plan"]
+    types:
+      - completed
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform-apply:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: production   # 👈 approval popup
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.0
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve
