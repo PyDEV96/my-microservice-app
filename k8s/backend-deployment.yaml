@@ -16,4 +16,4 @@ spec:
         - name: task-service
           image: task-service:latest   # UPDATED BY CI
           ports:
-            - containerPort: 3000
+            - containerPort: 8000

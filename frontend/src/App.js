@@ -5,7 +5,7 @@ function App() {
 
   useEffect(() => {
     // Calling your Python FastAPI backend
-    fetch('http://localhost:8000/api/tasks')
+    fetch('/api/tasks')
       .then(res => res.json())
       .then(data => setTasks(data))
       .catch(err => console.error("API Error:", err));
