@@ -58,6 +58,9 @@ jobs:
           aws eks update-kubeconfig \
             --name tier-app-eks \
             --region ${{ secrets.AWS_REGION }}
+            
+      - name: Set up Kubeconfig
+        run: aws eks update-kubeconfig --region ap-south-1 --name tier-app-eks
 
       - name: Deploy to EKS
         run: |
